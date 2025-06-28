@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Crusher Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px;
+        }
+
+        canvas {
+            border: 1px solid black;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Block Crusher Game</h1>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        let score = 0;
+        const blockWidth = 75; 
+        const blockHeight = 20; 
+        let paddleWidth = 100; 
+        const paddleHeight = 10; 
+        const ballRadius = 10; 
+        let blocks = [];
+        const rows = 5;
+        const cols = 8; 
+        let paddleX;
+        let balls = []; // Array to hold multiple balls
+        let ballDX = 2; // Ball speed in X direction
+        let ballDY = -2; // Ball speed in Y direction
+        let rightPressed = false;
+        let leftPressed = false;
+
+        // Bullet variables
+        let bullets = []; // Array to hold bullets
+        const bulletRadius = 5; // Radius of the bullet
+        const bulletSpeed = 4; // Speed of the bullet
+
+        // Prize variables
+        let prizes = [];
+        const prizeRadius = 10; // Radius of the prize
+        const prizeFallSpeed = 2; // Speed at which the prize falls
+
+        // Initialize game state
+        function initGame() {
+            score = 0;
+            paddleX = (canvas.width - paddleWidth) / 2;
+            balls = [{ x: canvas.width / 2, y: canvas.height - 30, dx: ballDX, dy: ballDY }]; // Initialize with one ball
+            blocks = [];
+            prizes = [];
+            bullets = []; // Reset bullets
+
+            // Create blocks
+            for (let c = 0; c < cols; c++) {
+                blocks[c] = [];
+                for (let r = 0; r < rows; r++) {
+                    blocks[c][r] = { x: c * (blockWidth + 10) + 30, y: r * (blockHeight + 10) + 30, status: 1 }; // status 1 means the block is visible
+                }
+            }
+            gameLoop(); // Start the game loop
+        }
+
+        // Draw blocks
+        function drawBlocks() {
+            for (let c = 0; c < cols; c++) {
+                for (let r = 0; r < rows; r++) {
+                    if (blocks[c][r].status == 1) {
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(blocks[c][r].x, blocks[c][r].y, blockWidth, blockHeight);
+                    }
+                }
+            }
+        }
+
+        // Draw paddle
+        function drawPaddle() {
+            ctx.fillStyle = 'green';
+            ctx.fillRect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+        }
+
+        // Draw balls
+        function drawBalls() {
+            ctx.fillStyle = 'red';
+            balls.forEach(ball => {
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        // Draw bullets
+        function drawBullets() {
+            ctx.fillStyle = 'orange';
+            bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bulletRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        // Draw prizes
+        function drawPrizes() {
+            ctx.fillStyle = 'yellow';
+            prizes.forEach(prize => {
+                ctx.beginPath();
+                ctx.arc(prize.x, prize.y, prizeRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        // Collision detection
+        function collisionDetection() {
+            for (let c = 0; c < cols; c++) {
+                for (let r = 0; r < rows; r++) {
+                    const b = blocks[c][r];
+                    if (b.status == 1) {
+                        balls.forEach((ball) => {
+                            if (ball.x > b.x && ball.x < b.x + blockWidth && ball.y > b.y && ball.y < b.y + blockHeight) {
+                                ball.dy = -ball.dy; 
+                                b.status = 0; // Mark block as crushed
+                                score++;
+
+                                // Check if all blocks are crushed
+                                if (checkWin()) {
+                                    alert('You Win! Your score: ' + score);
+                                    initGame(); // Restart the game
+                                }
+
+                                // Random chance to drop a prize
+                                if (Math.random() < 0.5) { // 50% chance to drop a prize
+                                    const prizeX = b.x + blockWidth / 2;
+                                    const prizeY = b.y + blockHeight;
+                                    const prizeType = Math.random();
+                                    if (prizeType < 0.33) {
+                                        prizes.push({ x: prizeX, y: prizeY, collected: false, type: 'expand' }); // 33% chance for paddle expansion
+                                    } else if (prizeType < 0.66) {
+                                        prizes.push({ x: prizeX, y: prizeY, collected: false, type: 'bullet' }); // 33% chance for bullet
+                                    } else {
+                                        prizes.push({ x: prizeX, y: prizeY, collected: false, type: 'multiply' }); // 34% chance for speed multiply
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        // Check if all blocks are crushed
+        function checkWin() {
+            return blocks.flat().every(b => b.status === 0); // Check if all blocks are not visible
+        }
+
+        // Update prizes position
+        function updatePrizes() {
+            prizes.forEach(prize => {
+                prize.y += prizeFallSpeed; // Move prize downwards
+            });
+
+            // Remove prizes that fall below the canvas
+            prizes = prizes.filter(prize => prize.y < canvas.height);
+        }
+
+        // Update bullets position
+        function updateBullets() {
+            bullets.forEach(bullet => {
+                bullet.y -= bulletSpeed; // Move bullet upwards
+            });
+
+            // Remove bullets that fall below the canvas
+            bullets = bullets.filter(bullet => bullet.y > 0);
+        }
+
+        // Game loop
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            drawBlocks(); 
+            drawPaddle(); 
+            drawBalls(); // Draw balls
+            drawBullets(); // Draw bullets
+            drawPrizes(); // Draw prizes
+            collisionDetection(); 
+            updatePrizes(); // Update prizes position
+            updateBullets(); // Update bullets position
+
+            // Update balls position
+            balls.forEach((ball, index) => {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // Ball collision with walls
+                if (ball.x + ballRadius > canvas.width || ball.x - ballRadius < 0) {
+                    ball.dx = -ball.dx; // Reverse direction
+                }
+                if (ball.y - ballRadius < 0) {
+                    ball.dy = -ball.dy; // Reverse direction
+                } else if (ball.y + ballRadius > canvas.height) {
+                    // Remove the ball that falls below the canvas
+                    balls.splice(index, 1); // Remove the ball from the array
+                }
+
+                // Ball collision with paddle
+                if (ball.y + ballRadius > canvas.height - paddleHeight &&
+                    ball.x > paddleX && ball.x < paddleX + paddleWidth) {
+                    ball.dy = -ball.dy; // Reverse direction
+                }
+            });
+
+            // End the game if there are no balls left
+            if (balls.length === 0) {
+                alert('Game Over! Your score: ' + score);
+                initGame(); // Restart the game
+            }
+
+            document.getElementById('score').innerText = 'Score: ' + score; 
+
+            // Update paddle position
+            if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                paddleX += 7; 
+            } else if (leftPressed && paddleX > 0) {
+                paddleX -= 7; 
+            }
+
+            collectPrizes(); // Check for prize collection
+
+            requestAnimationFrame(gameLoop); 
+        }
+
+        // Control paddle movement
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowRight') {
+                rightPressed = true;
+            } else if (event.key === 'ArrowLeft') {
+                leftPressed = true;
+            } else if (event.key === 'Space') {
+                shootBullet(); // Shoot bullet on Space key press
+            }
+        });
+
+        document.addEventListener('keyup', function(event) {
+            if (event.key === 'ArrowRight') {
+                rightPressed = false;
+            } else if (event.key === 'ArrowLeft') {
+                leftPressed = false;
+            }
+        });
+
+        // Collect prize if paddle hits it
+        function collectPrizes() {
+            prizes.forEach(prize => {
+                if (!prize.collected && prize.y + prizeRadius > canvas.height - paddleHeight &&
+                    prize.x > paddleX && prize.x < paddleX + paddleWidth) {
+                    prize.collected = true; // Mark prize as collected
+                    score += 5; // Increase score by 5 for collecting a prize
+
+                    // Check prize type and apply effects
+                    if (prize.type === 'expand') {
+                        paddleWidth += 20; // Increase paddle width
+                    } else if (prize.type === 'bullet') {
+                        // Enable shooting
+                        // Do nothing here, as shooting is enabled when the bullet prize is collected
+                    } else if (prize.type === 'multiply') {
+                        // Add a new ball with the same speed
+                        balls.push({ x: balls[0].x, y: balls[0].y, dx: ballDX, dy: ballDY });
+                    }
+                }
+            });
+            // Remove collected prizes
+            prizes = prizes.filter(prize => !prize.collected);
+        }
+
+        // Shoot bullet
+        function shootBullet() {
+            if (bullets.length < 5) { // Limit the number of bullets on screen
+                bullets.push({ x: paddleX + paddleWidth / 2, y: canvas.height - paddleHeight }); // Spawn bullet from paddle position
+            }
+        }
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>

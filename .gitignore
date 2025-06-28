@@ -1,0 +1,94 @@
+# Django specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django settings
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Media files
+media/
+
+# Static files (if you're using collectstatic)
+/staticfiles/
+/static/
+
+# Django migrations (optional - you might want to include these)
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+
+# Secret key and sensitive data
+.env
+.env.local
+.env.production
+.env.staging
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# Sphinx documentation
+docs/_build/
